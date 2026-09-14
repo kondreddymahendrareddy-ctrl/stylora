@@ -1,6 +1,8 @@
 import { User, LoginPayload, SignupPayload, AuthResponse } from '../types/auth';
 
-const AUTH_BASE = '/api/auth';
+const AUTH_BASE = import.meta.env.VITE_API_URL 
+  ? `${import.meta.env.VITE_API_URL.replace(/\/$/, '')}/api/auth` 
+  : '/api/auth';
 const TOKEN_KEY = 'stylora_auth_token';
 
 export function getStoredToken(): string | null {
