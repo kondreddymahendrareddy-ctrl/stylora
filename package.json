@@ -1,0 +1,13 @@
+{
+  "name": "stylora",
+  "version": "1.0.0",
+  "description": "STYLORA — AI Personal Stylist & Wardrobe Intelligence (Track 3: Fashion x Technology)",
+  "scripts": {
+    "dev:server": "npm --prefix server run dev",
+    "dev:client": "npm --prefix client run dev",
+    "build": "npm --prefix server run build && npm --prefix client run build"
+  },
+  "keywords": ["ai", "personal-stylist", "fashion-tech", "gemini", "multimodal"],
+  "author": "STYLORA Team",
+  "license": "MIT"
+}
