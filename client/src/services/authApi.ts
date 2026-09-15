@@ -29,14 +29,33 @@ export function clearStoredToken(): void {
   }
 }
 
-export async function login(payload: LoginPayload): Promise<{ user: User; token: string }> {
-  const res = await fetch(`${AUTH_BASE}/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  });
+async function safeJsonParse(res: Response, defaultErrorMsg: string): Promise<any> {
+  const text = await res.text();
+  let data: any = null;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    if (!res.ok || text.includes('<!DOCTYPE') || !text.trim()) {
+      throw new Error('Cannot connect to the backend server. Please make sure the backend API is running (port 5000 locally, or deployed on Render).');
+    }
+    throw new Error(defaultErrorMsg);
+  }
+  return data;
+}
 
-  const data: AuthResponse = await res.json();
+export async function login(payload: LoginPayload): Promise<{ user: User; token: string }> {
+  let res: Response;
+  try {
+    res = await fetch(`${AUTH_BASE}/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+  } catch {
+    throw new Error('Network error: Unable to reach the backend server. Please verify your connection.');
+  }
+
+  const data: AuthResponse = await safeJsonParse(res, 'Failed to log in.');
   if (!data.success || !data.token || !data.user) {
     throw new Error(data.error || 'Failed to log in.');
   }
@@ -46,13 +65,18 @@ export async function login(payload: LoginPayload): Promise<{ user: User; token:
 }
 
 export async function signup(payload: SignupPayload): Promise<{ user: User; token: string }> {
-  const res = await fetch(`${AUTH_BASE}/signup`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${AUTH_BASE}/signup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+  } catch {
+    throw new Error('Network error: Unable to reach the backend server. Please verify your connection.');
+  }
 
-  const data: AuthResponse = await res.json();
+  const data: AuthResponse = await safeJsonParse(res, 'Failed to create account.');
   if (!data.success || !data.token || !data.user) {
     throw new Error(data.error || 'Failed to create account.');
   }
@@ -68,7 +92,7 @@ export async function fetchCurrentUser(token: string): Promise<User> {
     }
   });
 
-  const data = await res.json();
+  const data = await safeJsonParse(res, 'Session expired.');
   if (!data.success || !data.user) {
     clearStoredToken();
     throw new Error(data.error || 'Session expired.');
@@ -101,7 +125,7 @@ export async function updateProfile(updates: Partial<User>, token?: string): Pro
     },
     body: JSON.stringify(updates)
   });
-  const data = await res.json();
+  const data = await safeJsonParse(res, 'Failed to update profile');
   if (!data.success || !data.user) {
     throw new Error(data.error || 'Failed to update profile');
   }
